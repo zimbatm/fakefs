@@ -30,13 +30,36 @@ module FakeFS
 
     def rm(list, options = {})
       Array(list).each do |path|
-        FileSystem.delete(path) or raise Errno::ENOENT.new(path)
+        obj = FileSystem.find(path)
+        if !obj
+          raise Errno::ENOENT.new(path) if !options[:force]
+        elsif obj.directory?
+          raise Errno::EISDIR.new(path)
+        else
+          obj.delete
+        end
       end
     end
 
-    alias_method :rm_rf, :rm
-    alias_method :rm_r, :rm
-    alias_method :rm_f, :rm
+    def rm_f(list, options = {})
+      rm(list, options.merge(:force => true))
+    end
+
+    def rm_r(list, options = {})
+      Array(list).each do |path|
+        obj = FileSystem.find(path)
+        if !obj
+          raise Errno::ENOENT.new(path) if !options[:force]
+        else
+          obj.delete
+        end
+      end
+    end
+
+    def rm_rf(list, options = {})
+      rm_r(list, options.merge(:force => true))
+    end
+
 
     def ln_s(target, path, options = {})
       options = { :force => false }.merge(options)
